@@ -1,4 +1,3 @@
-
 from flask import Flask, request, send_file, jsonify
 from flask_cors import CORS
 import edge_tts
@@ -22,15 +21,30 @@ def generate_voice():
             
         text = data.get('text', '').strip()
         voice = data.get('voice', 'bn-BD-NabanitaNeural')
+        style = data.get('style', 'default')  # romantic, motivational, emotional, sad, default
 
         if not text:
             return jsonify({'error': 'No text provided'}), 400
+
+        # Adjust rate and pitch based on style
+        rate = "+0%"
+        pitch = "+0Hz"
+
+        if style == "romantic":
+            rate = "-8%"
+            pitch = "+2Hz"
+        elif style == "motivational":
+            rate = "+5%"
+            pitch = "-2Hz"
+        elif style == "emotional" or style == "sad":
+            rate = "-15%"
+            pitch = "-4Hz"
 
         filename = f"voice_{uuid.uuid4().hex[:8]}.mp3"
         filepath = os.path.join('/tmp', filename)
 
         async def create_audio():
-            communicate = edge_tts.Communicate(text, voice)
+            communicate = edge_tts.Communicate(text, voice, rate=rate, pitch=pitch)
             await communicate.save(filepath)
 
         asyncio.run(create_audio())
