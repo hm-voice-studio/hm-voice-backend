@@ -1,3 +1,4 @@
+
 from flask import Flask, request, send_file, jsonify
 from flask_cors import CORS
 import edge_tts
@@ -6,17 +7,20 @@ import os
 import uuid
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 @app.route('/', methods=['GET'])
 def home():
-    return "HM Voice Lab API is Running!"
+    return "HM Voice Lab API is Running Successfully!"
 
 @app.route('/generate-voice', methods=['POST'])
 def generate_voice():
     try:
         data = request.get_json()
-        text = data.get('text', '')
+        if not data:
+            return jsonify({'error': 'Invalid JSON data'}), 400
+            
+        text = data.get('text', '').strip()
         voice = data.get('voice', 'bn-BD-NabanitaNeural')
 
         if not text:
@@ -31,7 +35,10 @@ def generate_voice():
 
         asyncio.run(create_audio())
 
-        return send_file(filepath, mimetype='audio/mpeg')
+        if os.path.exists(filepath):
+            return send_file(filepath, mimetype='audio/mpeg')
+        else:
+            return jsonify({'error': 'Audio generation failed'}), 500
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
